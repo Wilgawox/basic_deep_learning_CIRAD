@@ -1,22 +1,16 @@
 #Imports
-from audioop import error
 from glob import glob
-import pandas as pd
-import IPython.display as display
-import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
-import datetime, os
-from tensorflow.keras.layers import *
+import datetime
+import keras
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 from tensorflow.keras.optimizers import Adam
-from IPython.display import clear_output
-import tensorflow_addons as tfa
-from PIL import Image, ImageSequence
-import modif_image
+import tensorflow.keras.layers as tfk 
+from keras.callbacks import *
+from PIL import Image
 import data_prep_3D
-from skimage.io import imread, imshow
-from skimage.transform import resize
+import paths
 
 # Data paths
 training_data = "Data_Thibault/input/"
@@ -26,69 +20,110 @@ training_data_path = dataset_path+"data_training/"
 val_data_path = dataset_path+"data_validation/"
 test_data_path = dataset_path+"data_test"
 
-# Parameters for the tiles :
-SIZE = [512,512] #[x,y] dimensions of a tile
-IMG_H = SIZE[0]
-IMG_W = SIZE[1]
-STRIDE =  450 #Stride between two tiles in a image
-INT_ROOT = -1 #Value of a root pixel
-INT_BG = 1 #Value of a backgroung pixel
-
-#Table de permutation -> Classification
+# Parameters for the CNN :
+PERCENT_TRAIN_IMAGES = 50 #Calcul a faire avant execution
+PERCENT_VALID_IMAGES = 25
+PERCENT_TEST_IMAGES = 25
+SAMPLE_WEIGHT = 60
+PATIENCE = 5
+nb_epochs = 200
+batch_size = 16
+validation_split = 0.1
+layers = 3 #Number of layers for the CNN
 #18/9/9
-
-list_X = []
-for filename in glob(training_data+'*.tif'):
-    im=Image.open(filename)
-    list_X.append(data_prep_3D.create_Xarray(im))
-
-list_Y = []
-for filename in glob(res_data+'*.tif'):
-    im=Image.open(filename)
-    list_Y.append(data_prep_3D.create_Yarray(im))
-
-
-def image_writing(list_X, list_Y) : 
-   for i in range(1,2):#in range(list(list_X)) :
-        for j in range(len(list_X[i])):
-            tilesX = modif_image.img_processing(list_X[i][j], -1, 1, [512,512], 450)
-            tilesY = modif_image.img_processing(list_Y[i][j], -1, 1, [512,512], 450)
-            if len(tilesX)!=len(tilesY) :
-                raise Exception('Problem while cutting tiles', 'Different number of tiles')
-            if i<=len(list_X)//2 :
-                #50% of images in training
-                np.save((training_data_path+'training/ML1_input_'+str(i)+'.'+str(j)), tilesX)
-                np.save((training_data_path+'training/ML1_result_'+str(i)+'.'+str(j)), tilesY)
-            elif i>=3*len(list_X)//4 :
-                #25% of images in test
-                np.save((test_data_path+'test/ML1_input_'+str(i)+'.'+str(j)), tilesX)
-                np.save((test_data_path+'test/ML1_result_'+str(i)+'.'+str(j)), tilesY)
-            else :
-            #25% of images in validation
-                np.save((val_data_path+'val/ML1_input_'+str(i)+'.'+str(j)), tilesX)
-                np.save((val_data_path+'val/ML1_result_'+str(i)+'.'+str(j)), tilesY)
-
-image_writing(list_X, list_Y);
 
 N_CHANNELS = 1 
 N_CLASSES = 2 #softmax #Root or background
 NUM_TEST_IMAGES = 0 #Calcul a faire avant execution
 
-#img_list = os.listdir('../Data_Thibault/data/data_test')
-#mask_list = os.listdir('../input/bbbc005_v1_ground_truth/BBBC005_v1_ground_truth')
+def create_XY(n_img, time, tile_number) :
+    X = []
+    Y = []
+    for i in range(n_img+1) : 
+        for t in range(time+1) :
+            for n in range(tile_number+1) :
+                #if i, t et n < parametres max pour les images
+                a = np.load(paths.dataset_path+'ML1_input_img'+str(i)+'.time'+str(t)+'.number'+str(n)+'.npy')
+                b = np.load(paths.dataset_path+'ML1_result_img'+str(i)+'.time'+str(t)+'.number'+str(n)+'.npy')
+                X.append(a)
+                Y.append(b)
+    return X, Y
 
-#Creation of a dataset
-df_images = pd.DataFrame(img_list, columns=['image_id'])
 
-def get_num_cells(x):
-    # split on the _
-    a = x.split('_')
-    # choose the third item
-    b = a[2] # e.g. C53
-    # choose second item onwards and convert to int
-    num_cells = int(b[1:])
+
+def shuffle_XY(liste_X, liste_Y, percent_train, percent_valid, percent_test) :
+    N = len(liste_X)
+    random_list = np.arange(N)
+    np.random.shuffle(random_list)
     
-    return num_cells
+    X_temp = np.array(liste_X)[random_list]
+    Y_temp = np.array(liste_Y)[random_list]
+    
+    X_train = X_temp[0:(percent_train*N)//100]
+    X_valid = X_temp[0:(percent_valid*N)//100]
+    X_test = X_temp[0:(percent_test*N)//100]
+    
+    Y_train = Y_temp[0:(percent_train*N)//100]
+    Y_valid = Y_temp[0:(percent_valid*N)//100]
+    Y_test = Y_temp[0:(percent_test*N)//100]
+    return X_train,Y_train,X_test,Y_test,X_valid,Y_valid
 
-# create a new column called 'num_cells'
-#df_images['num_cells'] = df_images['image_id'].apply(get_num_cells)
+
+
+def CNN(n_img, time, tile_number) :
+    X,Y = create_XY(n_img, time, tile_number)
+    X_train,Y_train,X_test,Y_test,X_valid,Y_valid=shuffle_XY(X, Y, PERCENT_TRAIN_IMAGES, PERCENT_VALID_IMAGES, PERCENT_TEST_IMAGES)
+    inputs = tfk.Input(shape=(512, 512, 1))
+    convo1 = tfk.Conv2D(batch_size, layers, activation='sigmoid', padding='same', kernel_initializer='he_normal')(inputs)
+    #convo1 = tfk.Dropout(0.1)(convo1)
+    convo2 = tfk.Conv2D(batch_size, layers, activation='sigmoid', padding='same', kernel_initializer='he_normal')(convo1)
+
+    output = tfk.Conv2D(1, 1, activation = 'sigmoid')(convo2)
+
+    model = tf.keras.Model(inputs = inputs, outputs = output)
+    model.compile(optimizer='rmsprop',
+        loss=keras.losses.BinaryCrossentropy(),
+        metrics=['accuracy'])
+
+    filepath = paths.MODEL_FILEPATH
+
+    # Calculate the weights for each class so that we can balance the data
+    #print(np.shape(sample_weight))
+    #print(np.shape(X_train), np.shape(Y_train))
+    
+    # Add the class weights to the training                                         
+    sample_weight = np.ones(np.shape(Y_train))
+    sample_weight[Y_train == 1] = SAMPLE_WEIGHT
+
+    
+    earlystopper = EarlyStopping(patience=PATIENCE, verbose=1)
+
+    checkpoint = ModelCheckpoint(filepath, monitor='val_loss', verbose=1, 
+                                 save_best_only=True, mode='min')
+    log_dir = "logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
+    callbacks_list = [tensorboard_callback,earlystopper, checkpoint]
+
+    history = model.fit(np.array(X_train), 
+                        np.array(Y_train), 
+                        validation_split=validation_split, batch_size=batch_size, 
+                        epochs=nb_epochs, callbacks=callbacks_list)
+
+    model.load_weights(paths.MODEL_FILEPATH)
+    test = model.predict(X_test)
+    test_img_pred = test[0, :, :, 0]
+    test_image = X_test[0, :, :]
+    test_res_img = Y_test[0, :, :]
+    plt.figure(figsize=(10,10))
+
+    plt.subplot(1,3,1)
+    plt.imshow(test_image, cmap='gray')
+    plt.title('Original', fontsize=14)
+    plt.subplot(1,3,2)
+
+    plt.imshow(test_img_pred, cmap='gray')
+    plt.title('Predicted', fontsize=14)
+    
+    plt.subplot(1,3,3)
+    plt.imshow(test_res_img, cmap='gray')
+    plt.title('Result we want', fontsize=14)
