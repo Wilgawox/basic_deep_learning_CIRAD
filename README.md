@@ -3,7 +3,7 @@
 <h3 align="center">Root Detection On 2D+T Images</h3>
 
   <p align="center">
-    Project designed to use Deep learning in images of root growing to recognize which part of the image is a root, and what is background
+    Project designed to use Deep learning in images of growing Arabidopsis Thaliana roots to recognize which pixel is part of root, and what ispart of background
     or noise
     <br />
 
