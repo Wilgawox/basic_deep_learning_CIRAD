@@ -7,11 +7,11 @@ val_data_path = dataset_path+"data_validation/"
 test_data_path = dataset_path+"data_test/"
 MODEL_FILEPATH = "Data_Thibault/model.h5"
 
-SIZE = [512,512] #[x,y] dimensions of a tile
+TILE_SIZE = [512,512] #[x,y] dimensions of a tile
 IMG_H = SIZE[0]
 IMG_W = SIZE[1]
 STRIDE =  450 #Stride between two tiles in a image
-INT_ROOT = -1 #Value of a root pixel
-INT_BG = 1 #Value of a backgroung pixel
+INT_ROOT = -1 #Target value of a root pixel
+INT_BG = 1 #Target value of a backgroung pixel
 N_CHANNELS = 1 
 N_CLASSES = 2 #softmax #Root or background

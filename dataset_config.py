@@ -36,7 +36,7 @@ N_CHANNELS = 1
 N_CLASSES = 2 #softmax #Root or background
 NUM_TEST_IMAGES = 0 #Calcul a faire avant execution
 
-def create_XY(n_img, time, tile_number) :
+def create_IO_for_CNN_training(n_img, time, tile_number) :
     X = []
     Y = []
     for i in range(n_img+1) : 
@@ -71,6 +71,8 @@ def shuffle_XY(liste_X, liste_Y, percent_train, percent_valid, percent_test) :
 
 
 def CNN(n_img, time, tile_number) :
+    # TODO : Split this function
+    # train_CNN and apply_CNN
     X,Y = create_XY(n_img, time, tile_number)
     X_train,Y_train,X_test,Y_test,X_valid,Y_valid=shuffle_XY(X, Y, PERCENT_TRAIN_IMAGES, PERCENT_VALID_IMAGES, PERCENT_TEST_IMAGES)
     inputs = tfk.Input(shape=(512, 512, 1))

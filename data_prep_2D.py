@@ -13,7 +13,7 @@ INT_BG = 1 #Value of a backgroung pixel
 CHANNEL = 1 #Images are B&W so 1 channel, would be 3 for RGB
 N_CLASSES = 2 #Pixels either belong to the background or to a root
 
-def data_prep_2D_classified(list_X, list_Y) :
+def data_arborescence_setup_splitter(list_X, list_Y) :
     #Function not working anymore, keeping it here for now if I need it later on
     # Process and save the images, putting them in different folders to serve differents puposes
    for i in range(0, len(list_X)) :
@@ -39,7 +39,7 @@ def data_prep_2D_classified(list_X, list_Y) :
 
 
 
-def data_prep_2D(list_X, list_Y) : 
+def data_arborescence_setup(list_X, list_Y) : 
     # Save X and Y as .npy in the dataset path, tiled and ranged
     for i in range(0, len(list_X)) :
         for j in range(len(list_X[i])):
