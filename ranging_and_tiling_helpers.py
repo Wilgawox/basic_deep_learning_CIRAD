@@ -1,9 +1,10 @@
 import numpy as np
+import paths
+import statistics
 
 
 def reduced_centered_range(img, intensity_bg, intensity_root) :
     #Process the img to adjust the value between the 2 intensities, and reverse the black and white
-    #TODO : Prendre les points de racines -> Fait une mediane ->pareil pour bgd
     maxx = np.amax(img)
     minn = np.amin(img)
     a = (intensity_bg-intensity_root)/(maxx-minn)
@@ -11,27 +12,46 @@ def reduced_centered_range(img, intensity_bg, intensity_root) :
     imgCR = a*img+b
     return np.array(imgCR).astype(np.dtype('float32'))
 
+def average_range(img, intensity_bg, intensity_root) :
+    #Take an image to fing its max/min values, take the adjacent pixels, and then find the average value of a pixel of root/background
+    #Then it change the image to have max(img)=average_root_value/min(img)=average_min_value
+    # NOT YET TESTED
+    maxx = np.amax(img)
+    max_loc = np.where(img == maxx)#Location of the max value
+    max_loc = list(zip(max_loc[0], max_loc[1]))[0]# Tuple with location of max value
+    minn = np.amin(img)
+    min_loc = list(zip(min_loc[0], min_loc[1]))[0]# Tuple with location of min value
+    maxx = statistics.mean([img[max_loc[0][0]][max_loc[1][0]+1]+img[max_loc[0][0]][max_loc[0][1]-1]+img[max_loc[0][0]+1][max_loc[0][1]]+img[max_loc[0][0]-1][max_loc[0][1]]])
+    minn = statistics.mean([img[min_loc[0][0]][min_loc[1][0]+1]+img[min_loc[0][0]][min_loc[0][1]-1]+img[min_loc[0][0]+1][min_loc[0][1]]+img[min_loc[0][0]-1][min_loc[0][1]]])
+    a = (intensity_bg-intensity_root)/(maxx-minn)
+    b = intensity_bg-a*maxx
+    imgCR = a*img+b
+    return np.array(imgCR).astype(np.dtype('float32'))
 
 
-def img_split_no_borders(img : np.array, final_size : tuple, stride) :
-    #DEPRECATED
-    #Slice img to tiles in final_size shape, and cut the bits that do not fit
+
+def tiling_only_roots(img : np.array, final_size : tuple, stride) :
+    #Slice img to tiles in final_size shape, and keep only the slices that have white pixel in it, not using most of the tiles without root in them
+    # NOT YET TESTED
     img_w, img_h = img.shape
     tile_w, tile_h = final_size
     tiles=[]
     for i in np.arange(img_w, step=stride):
-            for j in np.arange(img_h, step=stride):
-                bloc = img[i:i+tile_w, j:j+tile_h]
-                if bloc.shape == (final_size[0], final_size[1]):
-                    tiles.append(bloc)      
+        for j in np.arange(img_h, step=stride):
+            bloc = img[i:i+tile_w, j:j+tile_h]
+            if np.max(bloc)>(paths.INT_ROOT+paths.INT_BG)/2 :
+                if bloc.shape == (tile_w, tile_h):
+                    tiles.append(bloc)
+                else :
+                    bloc_w, bloc_h = bloc.shape;
+                    bloc = img[(i-(tile_w-bloc_w)):(i+tile_w), (j-(tile_h-bloc_h)):(j+tile_h)]
+                    tiles.append(bloc)
     return tiles
 
-
-def tiling(img, tile_size : tuple, stride) :
+def tiling(img, final_size : tuple, stride) :
     #Try to slice img to tiles in final_size shape, and slide the rest to be of the same size
-    # TODO : #Faire fonction qui prends pas le blocs sans racines ou qui pondere le %tage de bloc sans racines
     img_w, img_h = img.shape
-    tile_w, tile_h = tile_size
+    tile_w, tile_h = final_size
     tiles=[]
     for i in np.arange(img_w, step=stride):
         for j in np.arange(img_h, step=stride):
@@ -44,7 +64,7 @@ def tiling(img, tile_size : tuple, stride) :
                 tiles.append(bloc)
     return tiles
 
-def img_processing(img : np.array, intensity_bg, intensity_root, tile_size : tuple, stride : int) : 
+def img_tile_and_range(img : np.array, intensity_bg, intensity_root, tile_size : tuple, stride : int) : 
         img = reduced_centered_range(img, intensity_bg, intensity_root)
         tiles = tiling(img, tile_size, stride)
         return tiles
@@ -52,7 +72,7 @@ def img_processing(img : np.array, intensity_bg, intensity_root, tile_size : tup
 
 def reverse_tiling(img_size, tiles, stride) :    
     # This function take an image and its tile list created with the function tiling()
-    # We need to keep the same stride used intiling()
+    # We need to keep the same stride used in tiling()
     img_w, img_h = img_size
     tile_w, tile_h = tiles[0].shape
     
