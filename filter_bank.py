@@ -1,4 +1,6 @@
-def create_filter_ban(time_sequence):
+import numpy as np
+
+def create_filter_bank(time_sequence):
     # Input  : a np.array( dim_X, dim_Y, dim_T) with float values indicating probability of background (values near -1) or root (values near 1)
     # Output : a np.array( dim_X, dim_Y ) with integer values indicating for each pixel (x,y) the root apparition time from 1 to max_time, or zero if no_root
     
@@ -17,7 +19,7 @@ def test_filter_bank():
     N_times=5
     data=np.array([[[[ 1 if (col==2 and lig<=tim) else -1 ] for col in range(N_times+2)] for lig in range(N_times+3)] for tim in range(N_times)] )
     print("Data provided : "+str(np.shape(data)))
-    data2d=catf2D_2(data)
+    data2d=create_filter_bank(data)
     print("Result should show a root growing to the south")
     print(data2d)
 

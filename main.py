@@ -5,8 +5,6 @@ import ranging_and_tiling_helpers
 import dataset_config
 import data_prep_2D
 
-import numpy as np
-import matplotlib.pyplot as plt
 from PIL import Image
 
 

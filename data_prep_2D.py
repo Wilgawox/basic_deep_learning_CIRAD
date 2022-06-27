@@ -1,6 +1,6 @@
 
 import numpy as np
-import modif_image
+import ranging_and_tiling_helpers
 import paths
 
 
@@ -10,8 +10,8 @@ def data_arborescence_setup_splitter(list_X, list_Y) :
     # Process and save the images, putting them in different folders to serve differents puposes
    for i in range(0, len(list_X)) :
         for j in range(len(list_X[i])):
-            tilesX = modif_image.data_range_and_tile(list_X[i][j], paths.INT_ROOT, paths.INT_BG, paths.TILE_SIZE, paths.STRIDE)
-            tilesY = modif_image.tiling(list_Y[i][j], paths.TILE_SIZE, paths.STRIDE)
+            tilesX = ranging_and_tiling_helpers.data_range_and_tile(list_X[i][j], paths.INT_ROOT, paths.INT_BG, paths.TILE_SIZE, paths.STRIDE)
+            tilesY = ranging_and_tiling_helpers.tiling(list_Y[i][j], paths.TILE_SIZE, paths.STRIDE)
             if len(tilesX)!=len(tilesY) :
                 # Check for different size tiles, which would be a big problem later on
                 raise Exception('Problem while cutting tiles', 'Different number of tiles')
@@ -36,8 +36,8 @@ def data_arborescence_setup(list_X, list_Y) :
     for i in range(0, len(list_X)) :
         for j in range(len(list_X[i])):
             # Ranging and tiling the images
-            tilesX = modif_image.data_range_and_tile(list_X[i][j], paths.INT_ROOT, paths.INT_BG, paths.TILE_SIZE, paths.STRIDE)
-            tilesY = modif_image.tiling(list_Y[i][j], paths.TILE_SIZE, paths.STRIDE)
+            tilesX = ranging_and_tiling_helpers.data_range_and_tile(list_X[i][j], paths.INT_ROOT, paths.INT_BG, paths.TILE_SIZE, paths.STRIDE)
+            tilesY = ranging_and_tiling_helpers.tiling(list_Y[i][j], paths.TILE_SIZE, paths.STRIDE)
             if len(tilesX)!=len(tilesY) :
                 # Check for different size tiles, which would be a big problem later on
                 raise Exception('Problem while cutting tiles', 'Different number of tiles')
