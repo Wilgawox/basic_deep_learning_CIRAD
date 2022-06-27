@@ -3,23 +3,15 @@ import numpy as np
 import modif_image
 import paths
 
-# Parameters for the tiles :
-SIZE = [512,512] #[x,y] dimensions of a tile
-IMG_H = SIZE[0] #Height of a tile
-IMG_W = SIZE[1] # Weight of a tile
-STRIDE =  450 #Stride between two tiles in a image
-INT_ROOT = -1 #Value of a root pixel
-INT_BG = 1 #Value of a backgroung pixel
-CHANNEL = 1 #Images are B&W so 1 channel, would be 3 for RGB
-N_CLASSES = 2 #Pixels either belong to the background or to a root
+
 
 def data_arborescence_setup_splitter(list_X, list_Y) :
     #Function not working anymore, keeping it here for now if I need it later on
     # Process and save the images, putting them in different folders to serve differents puposes
    for i in range(0, len(list_X)) :
         for j in range(len(list_X[i])):
-            tilesX = modif_image.data_range_and_tile(list_X[i][j], INT_ROOT, INT_BG, SIZE, STRIDE)
-            tilesY = modif_image.tiling(list_Y[i][j], SIZE, STRIDE)
+            tilesX = modif_image.data_range_and_tile(list_X[i][j], paths.INT_ROOT, paths.INT_BG, paths.TILE_SIZE, paths.STRIDE)
+            tilesY = modif_image.tiling(list_Y[i][j], paths.TILE_SIZE, paths.STRIDE)
             if len(tilesX)!=len(tilesY) :
                 # Check for different size tiles, which would be a big problem later on
                 raise Exception('Problem while cutting tiles', 'Different number of tiles')
@@ -44,8 +36,8 @@ def data_arborescence_setup(list_X, list_Y) :
     for i in range(0, len(list_X)) :
         for j in range(len(list_X[i])):
             # Ranging and tiling the images
-            tilesX = modif_image.data_range_and_tile(list_X[i][j], INT_ROOT, INT_BG, SIZE, STRIDE)
-            tilesY = modif_image.tiling(list_Y[i][j], SIZE, STRIDE)
+            tilesX = modif_image.data_range_and_tile(list_X[i][j], paths.INT_ROOT, paths.INT_BG, paths.TILE_SIZE, paths.STRIDE)
+            tilesY = modif_image.tiling(list_Y[i][j], paths.TILE_SIZE, paths.STRIDE)
             if len(tilesX)!=len(tilesY) :
                 # Check for different size tiles, which would be a big problem later on
                 raise Exception('Problem while cutting tiles', 'Different number of tiles')

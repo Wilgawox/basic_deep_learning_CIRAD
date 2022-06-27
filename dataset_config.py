@@ -4,37 +4,13 @@ import numpy as np
 import tensorflow as tf
 import datetime
 import keras
+import matplotlib.pyplot as plt
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 from tensorflow.keras.optimizers import Adam
 import tensorflow.keras.layers as tfk 
 from keras.callbacks import *
-from PIL import Image
-import data_prep_3D
 import paths
 
-# Data paths
-training_data = "Data_Thibault/input/"
-res_data = "Data_Thibault/results/"
-dataset_path = "Data_Thibault/data/"
-training_data_path = dataset_path+"data_training/"
-val_data_path = dataset_path+"data_validation/"
-test_data_path = dataset_path+"data_test"
-
-# Parameters for the CNN :
-PERCENT_TRAIN_IMAGES = 50 #Calcul a faire avant execution
-PERCENT_VALID_IMAGES = 25
-PERCENT_TEST_IMAGES = 25
-SAMPLE_WEIGHT = 60
-PATIENCE = 5
-nb_epochs = 200
-batch_size = 16
-validation_split = 0.1
-layers = 3 #Number of layers for the CNN
-#18/9/9
-
-N_CHANNELS = 1 
-N_CLASSES = 2 #softmax #Root or background
-NUM_TEST_IMAGES = 0 #Calcul a faire avant execution
 
 def create_IO_for_CNN_training(n_img, time, tile_number) :
     X = []
@@ -73,12 +49,12 @@ def shuffle_XY(liste_X, liste_Y, percent_train, percent_valid, percent_test) :
 def CNN(n_img, time, tile_number) :
     # TODO : Split this function
     # train_CNN and apply_CNN
-    X,Y = create_XY(n_img, time, tile_number)
-    X_train,Y_train,X_test,Y_test,X_valid,Y_valid=shuffle_XY(X, Y, PERCENT_TRAIN_IMAGES, PERCENT_VALID_IMAGES, PERCENT_TEST_IMAGES)
+    X,Y = create_IO_for_CNN_training(n_img, time, tile_number)
+    X_train,Y_train,X_test,Y_test,X_valid,Y_valid=shuffle_XY(X, Y, paths.PERCENT_TRAIN_IMAGES, paths.PERCENT_VALID_IMAGES, paths.PERCENT_TEST_IMAGES)
     inputs = tfk.Input(shape=(512, 512, 1))
-    convo1 = tfk.Conv2D(batch_size, layers, activation='sigmoid', padding='same', kernel_initializer='he_normal')(inputs)
+    convo1 = tfk.Conv2D(paths.batch_size, paths.layers, activation='sigmoid', padding='same', kernel_initializer='he_normal')(inputs)
     #convo1 = tfk.Dropout(0.1)(convo1)
-    convo2 = tfk.Conv2D(batch_size, layers, activation='sigmoid', padding='same', kernel_initializer='he_normal')(convo1)
+    convo2 = tfk.Conv2D(paths.batch_size, paths.layers, activation='sigmoid', padding='same', kernel_initializer='he_normal')(convo1)
 
     output = tfk.Conv2D(1, 1, activation = 'sigmoid')(convo2)
 
@@ -95,10 +71,10 @@ def CNN(n_img, time, tile_number) :
     
     # Add the class weights to the training                                         
     sample_weight = np.ones(np.shape(Y_train))
-    sample_weight[Y_train == 1] = SAMPLE_WEIGHT
+    sample_weight[Y_train == 1] = paths.SAMPLE_WEIGHT
 
     
-    earlystopper = EarlyStopping(patience=PATIENCE, verbose=1)
+    earlystopper = EarlyStopping(patience=paths.PATIENCE, verbose=1)
 
     checkpoint = ModelCheckpoint(filepath, monitor='val_loss', verbose=1, 
                                  save_best_only=True, mode='min')
@@ -108,8 +84,8 @@ def CNN(n_img, time, tile_number) :
 
     history = model.fit(np.array(X_train), 
                         np.array(Y_train), 
-                        validation_split=validation_split, batch_size=batch_size, 
-                        epochs=nb_epochs, callbacks=callbacks_list)
+                        validation_split=paths.validation_split, batch_size=paths.batch_size, 
+                        epochs=paths.nb_epochs, callbacks=callbacks_list)
 
     model.load_weights(paths.MODEL_FILEPATH)
     test = model.predict(X_test)

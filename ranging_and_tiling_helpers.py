@@ -3,7 +3,7 @@ import numpy as np
 
 def reduced_centered_range(img, intensity_bg, intensity_root) :
     #Process the img to adjust the value between the 2 intensities, and reverse the black and white
-    #Prendre les points de racines -> Fait une mediane ->pareil pour bgd
+    #TODO : Prendre les points de racines -> Fait une mediane ->pareil pour bgd
     maxx = np.amax(img)
     minn = np.amin(img)
     a = (intensity_bg-intensity_root)/(maxx-minn)
@@ -29,6 +29,7 @@ def img_split_no_borders(img : np.array, final_size : tuple, stride) :
 
 def tiling(img, tile_size : tuple, stride) :
     #Try to slice img to tiles in final_size shape, and slide the rest to be of the same size
+    # TODO : #Faire fonction qui prends pas le blocs sans racines ou qui pondere le %tage de bloc sans racines
     img_w, img_h = img.shape
     tile_w, tile_h = tile_size
     tiles=[]
@@ -42,8 +43,6 @@ def tiling(img, tile_size : tuple, stride) :
                 bloc = img[(i-(tile_w-bloc_w)):(i+tile_w), (j-(tile_h-bloc_h)):(j+tile_h)]
                 tiles.append(bloc)
     return tiles
-
-#Faire fonction qui prends pas le blocs sans racines ou qui pondere le %tage de bloc sans racines
 
 def img_processing(img : np.array, intensity_bg, intensity_root, tile_size : tuple, stride : int) : 
         img = reduced_centered_range(img, intensity_bg, intensity_root)
@@ -96,22 +95,3 @@ def reverse_tiling(img_size, tiles, stride) :
             tile=tiles[i*ntY+j]
             final_img[x0:xf,y0:yf]=tile[a0:af,b0:bf]
     return final_img
-
-
-def catf2D(time_sequence):
-    # WIP : prends une image 2d+t et renvoie une image 2D de la croissance des racines au cours du temps
-    N_times=np.shape(time_sequence)[0]
-
-    # The filter_bank is a list of signal models corresponding to apparition of a root, computed for each target time
-    filter_bank=np.array([[[[ (j*2-1) if(j<2) else (-1+2*int( i>(j-2)))  for j in range(N_times+1)] for i in range(N_times)] ] ])  # F T Y X
-    #print(N_times)
-    #print(np.shape(filter_bank))
-    print(time_sequence.shape)
-    filter_bank=np.array([[[[ (j*2-1) if(j<2) else (-1+2*int( i>(j-2)))  for j in range(N_times+1)] ] ] for i in range(N_times)] )  # F Y X T
-    print(np.shape(filter_bank))
-    # Here is a visual example of the filter in charge of detection of root appearing at the third timepoint
-    print("This filter detects root appearing at the third timepoint : "+str(filter_bank[:,0,0,2]))
-
-    # The broadcasted element-wise dotproduct sum(data-mult-bank filter) try all the filters of the bank for each pixel to estimate the likelihood 
-    # of a root apparition at each target time. Then we use argmax function to select the index of the filter which gave the highest response
-    return np.argmax(np.sum( np.multiply(time_sequence,filter_bank),axis=0),axis=2)

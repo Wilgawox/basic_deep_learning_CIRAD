@@ -1,8 +1,7 @@
 #import imageio as iio
 #import cv2
 import numpy as np
-import matplotlib.pyplot as plt
-from PIL import Image, ImageSequence
+from PIL import ImageSequence
 
 def create_Xarray(img_2Dt) : 
     X=[]
